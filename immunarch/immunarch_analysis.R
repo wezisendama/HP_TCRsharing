@@ -28,7 +28,19 @@ bal.clones <- repExplore(kaminski_data.bal$data, .method = "clones")
 pbmc.volume <- repExplore(kaminski_data.pbmc$data, .method = "volume")
 pbmc.clones <- repExplore(kaminski_data.pbmc$data, .method = "clones")
 
-vis(bal.volume, .by = c("disease"), .meta = kaminski_data.bal$meta)
-vis(bal.clones, .by = c("disease"), .meta = kaminski_data.bal$meta)
-vis(pbmc.volume, .by = c("disease"), .meta = kaminski_data.pbmc$meta)
-vis(pbmc.clones, .by = c("disease"), .meta = kaminski_data.pbmc$meta)
+figure1A <- vis(bal.clones, .by = c("disease"), .meta = kaminski_data.bal$meta) # Figure 1A
+figure1B <- vis(bal.volume, .by = c("disease"), .meta = kaminski_data.bal$meta) # Figure 1B
+figure1C <- vis(pbmc.clones, .by = c("disease"), .meta = kaminski_data.pbmc$meta) # Figure 1C
+figure1D <- vis(pbmc.volume, .by = c("disease"), .meta = kaminski_data.pbmc$meta) # Figure 1D
+
+# used fixVis() to tidy up the charts. Charts render with Bonferroni-Holm adjusted p values
+# which are reasonable to use in the context given three pairwise comparisons. Adjusted p
+# values of 1 are therefore valid, but might unsettle some people. Straightforward p values
+# therefore given with the below tables:
+
+figure1A.stats <- figure1A$plot_env$p_df
+figure1B.stats <- figure1B$plot_env$p_df
+figure1C.stats <- figure1C$plot_env$p_df
+figure1D.stats <- figure1D$plot_env$p_df
+
+# Worth noting that the conclusions do not change even with unadjusted p values.
