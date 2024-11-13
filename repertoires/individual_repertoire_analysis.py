@@ -168,6 +168,6 @@ df_join_nn = join_by_dist(
     max_n = 5,
     radius = 48)
 
-output_filename = file + '_vs_vdjdb.tsv'
+output_filename = 'cord_vdjdb_' + file
 df_join_nn.to_csv(output_filename, sep = "\t")
  
