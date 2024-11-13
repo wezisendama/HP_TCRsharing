@@ -11,8 +11,6 @@ import scipy.sparse
 from tcrdist.breadth import get_safe_chunk
 from tcrdist.repertoire import TCRrep
 from tcrdist.join import join_by_dist
-from tcrdist.background import sample_britanova
-from tcrdist.background import get_stratified_gene_usage_frequency
 from tcrdist.pgen import OlgaModel
 
 CPUS = 4
@@ -20,9 +18,10 @@ CPUS = 4
 # load up the repertoire
 file = 'all_hp_bal_tcrb.tsv'
 
-df_bulk = pd.read_csv('all_hp_bal_tcrb.tsv', sep='\t')
+df_bulk = pd.read_csv(file, sep='\t')
 
-# remove the rows where the CDR3 is incompletely sequenced
+# remove the rows where the CDR3 is incompletely sequenced. The ones rendered with
+# question marks as missing amino acids will be removed by tcrdist
 filter = df_bulk['cdr3_b_aa'].str.contains('_')
 df_bulk = df_bulk[~filter]
 
@@ -51,14 +50,7 @@ scipy.sparse.save_npz(f'{file}.tr_bulk.rw_beta_csrmat.npz', tr_bulk.rw_beta)
 
 tr_bulk.rw_beta=scipy.sparse.load_npz(f'{file}.tr_bulk.rw_beta_csrmat.npz')
 
-# load up cord blood sample. Easier to do this even if not needed in this
-# analysis
-df_cord = sample_britanova(960000, random_state=1)
-
-ts = get_stratified_gene_usage_frequency(replace = True)
-
-# Uncomment above and change cell_df back to df_nn if you want to filter by
-# clones with > k_nn neighbours
+# tr_nearestneighbours
 tr_nn = TCRrep(
     cell_df = tr_bulk.clone_df,
     organism = "human",
@@ -71,22 +63,7 @@ tr_nn.cpus = CPUS
 # Sixfold weighting for CDR3 in TCRdist units
 tr_nn.weights_b = {'cdr3_b_aa': 6, 'pmhc_b_aa': 1, 'cdr2_b_aa': 1, 'cdr1_b_aa': 1}
 
-tr_cord = TCRrep(
-    cell_df = df_cord,
-    organism = "human",
-    chains = ['beta'],
-    cpus = CPUS,
-    compute_distances = False)
-
-# Have a look to see if clones have higher within-repertoire neighbours
-# compared to neighbours within cord blood (which would show antigenic
-# selection)
-chunk_size = get_safe_chunk(tr_nn.clone_df.shape[0], tr_cord.clone_df.shape[0])
-
-tr_nn.compute_sparse_rect_distances(df = tr_nn.clone_df, df2 = tr_cord.clone_df, radius = 72, chunk_size=chunk_size)
-scipy.sparse.save_npz(f'{file}.tr_nn_v_cord.rw_beta_csrmat.npz', tr_nn.rw_beta)
-tr_nn.rw_beta=scipy.sparse.load_npz(f'{file}.tr_nn_v_cord.rw_beta_csrmat.npz')
-
+# compute probabilities of CDR3 generation using OLGA
 olga_beta = OlgaModel(chain_folder = "human_T_beta", recomb_type = "VDJ")
 tr_nn.clone_df['pgen_cdr3_b_aa'] = olga_beta.compute_aa_cdr3_pgens(CDR3_seq=tr_nn.clone_df.cdr3_b_aa.to_list())
 
